@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ACM Fitness</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html,body{background:#020617;color:#f1f5f9;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+const COACH={email:'admin@acmfitness.com',password:'ACMfitness05',role:'admin',name:'Entrenador ACM Fitness'};
+const ld=(k,d)=>{try{const s=localStorage.getItem(k);return s?JSON.parse(s):d}catch{return d}};
+const sv=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const today=()=>new Date().toISOString().split('T')[0];
+const CLIENTS0=[
+{id:'client_1',role:'client',name:'Elena',lastName:'Gómez Martín',email:'elena@gmail.com',password:'password123',phone:'+34 612 345 678',weight:62.5,height:168,level:'Intermedio',mainGoal:'Pérdida de grasa y tonificación',injuries:'Sobrecarga leve en tendón rotuliano izquierdo',status:'Activo',metricsHistory:[{date:'2025-01-10',weight:65,benchPress:40,squat:65},{date:'2025-03-10',weight:62.5,benchPress:45,squat:75}]},
+{id:'client_2',role:'client',name:'Mateo',lastName:'Ruiz Delgado',email:'mateo@gmail.com',password:'password123',phone:'+34 689 901 234',weight:81.2,height:182,level:'Avanzado',mainGoal:'Ganancia de masa muscular limpia',injuries:'Molestias ocasionales en hombro derecho',status:'Activo',metricsHistory:[{date:'2024-11-05',weight:78,benchPress:90,squat:110},{date:'2025-03-01',weight:81.2,benchPress:105,squat:130}]}];
+const ex=(id,name,sets,reps,weight,rpe,rest,instructions)=>({id,name,sets,reps,weight,rpe,rest,instructions,completed:false});
+const WORKOUTS0=[
+{id:'wk_1',clientId:'client_1',title:'Fuerza Tren Inferior & Estabilidad Lumbar',date:'2026-10-02',duration:60,sessionGoal:'Cuádriceps y glúteos con control excéntrico',warmup:'10 min movilidad de tobillo y cadera + activación de glúteo medio',status:'Pendiente',feedback:null,rating:null,exercises:[ex('e1','Sentadilla Goblet',4,'10-12','18 kg','8','90s','Controla la bajada en 3 segundos.'),ex('e2','Prensa Inclinada Unilateral',3,'12 c/pierna','40 kg','8','75s','Rango sin dolor en rótula.'),ex('e3','Hip Thrust con Barra',4,'10','65 kg','8.5','120s','Pausa de 2 s arriba.')]},
+{id:'wk_2',clientId:'client_2',title:'Torso Empuje & Densidad Pectoral',date:'2026-10-01',duration:75,sessionGoal:'Sobrecarga progresiva en press plano',warmup:'YTWL con elásticos + series de aproximación',status:'Pendiente',feedback:null,rating:null,exercises:[ex('e4','Press de Banca con Barra',4,'6-8','102.5 kg','8.5','150s','Pausa de 1 s en el pecho.'),ex('e5','Fondos Lastrados',3,'10','+15 kg','8','90s','Inclinación de 15° hacia delante.')]}];
+
+const inp="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500";
+const btn="px-4 py-2.5 rounded-xl text-xs font-bold transition ";
+const G=btn+"bg-emerald-500 hover:bg-emerald-400 text-slate-950";
+const S=btn+"bg-slate-800 hover:bg-slate-700 text-white";
+const Card=({children,className=''})=><div className={"bg-slate-900 border border-slate-800 rounded-2xl p-5 "+className}>{children}</div>;
+const Avatar=({c})=><div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black shrink-0">{(c.name||'?')[0]}</div>;
+const Logo=()=><span className="text-xl font-black text-white">🏋️ ACM<span className="text-emerald-400">FITNESS</span></span>;
+const Field=({label,children})=><label className="block text-xs font-bold text-slate-300">{label}<div className="mt-1 font-normal">{children}</div></label>;
+
+function App(){
+ const [user,setUser]=useState(()=>ld('acm_active_user',null));
+ const [clients,setClients]=useState(()=>ld('acm_clients',CLIENTS0));
+ const [workouts,setWorkouts]=useState(()=>ld('acm_workouts',WORKOUTS0));
+ const [view,setView]=useState('landing');
+ const [toast,setToast]=useState(null);
+ const say=(m,t='ok')=>{setToast({m,t});setTimeout(()=>setToast(null),3200)};
+ useEffect(()=>sv('acm_active_user',user),[user]);
+ useEffect(()=>sv('acm_clients',clients),[clients]);
+ useEffect(()=>sv('acm_workouts',workouts),[workouts]);
+ const login=(email,pw)=>{
+  const e=email.trim().toLowerCase();
+  if(e===COACH.email){if(pw!==COACH.password)return'Contraseña de entrenador incorrecta.';setUser(COACH);say('Bienvenido, entrenador.');return null}
+  const c=clients.find(x=>x.email.toLowerCase()===e);
+  if(!c)return'No existe ninguna cuenta con este correo.';
+  if(c.password!==pw)return'Contraseña incorrecta.';
+  setUser(c);say('Bienvenido/a, '+c.name);return null};
+ const register=d=>{
+  if(clients.some(c=>c.email.toLowerCase()===d.email.toLowerCase())||d.email.toLowerCase()===COACH.email)return'Este correo ya está registrado.';
+  const c={...d,id:'client_'+Date.now(),role:'client',status:'Activo',weight:parseFloat(d.weight)||70,height:parseInt(d.height)||170,metricsHistory:[{date:today(),weight:parseFloat(d.weight)||70,benchPress:0,squat:0}]};
+  setClients(p=>[c,...p]);setUser(c);return null};
+ const logout=()=>{setUser(null);setView('landing')};
+ const shown=user?(user.role==='admin'?'coach':'client'):view;
+ return <div className="min-h-screen">
+  {toast&&<div className={"fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl border text-xs font-bold bg-slate-900 "+(toast.t==='err'?'border-red-500/50 text-red-300':'border-slate-700 text-white')}>{toast.m}</div>}
+  {shown==='landing'&&<Landing go={setView}/>}
+  {shown==='login'&&<Login go={setView} onLogin={login}/>}
+  {shown==='register'&&<Register go={setView} onRegister={register}/>}
+  {shown==='coach'&&<Coach clients={clients} setClients={setClients} workouts={workouts} setWorkouts={setWorkouts} say={say} logout={logout}/>}
+  {shown==='client'&&<ClientApp me={clients.find(c=>c.id===user.id)||user} workouts={workouts} setWorkouts={setWorkouts} say={say} logout={logout}/>}
+ </div>}
+
+function Landing({go}){return <div className="min-h-screen flex flex-col items-center justify-center text-center px-4">
+ <Logo/>
+ <h1 className="mt-8 text-4xl sm:text-6xl font-black text-white max-w-3xl leading-tight">Entrenamiento de élite. <span className="text-emerald-400">Control total.</span></h1>
+ <p className="mt-5 text-slate-400 max-w-xl">Rutinas a medida con carga, RPE y descansos, control de lesiones y seguimiento continuo de cada cliente.</p>
+ <div className="mt-8 flex flex-col sm:flex-row gap-3">
+  <button className={G+" px-8 py-3.5 text-sm"} onClick={()=>go('register')}>Registro de atleta</button>
+  <button className={S+" px-8 py-3.5 text-sm"} onClick={()=>go('login')}>Iniciar sesión</button></div>
+ <p className="mt-16 text-xs text-slate-500">© 2026 ACM FITNESS</p></div>}
+
+function Login({go,onLogin}){
+ const [e,setE]=useState('');const [p,setP]=useState('');const [err,setErr]=useState('');
+ return <div className="min-h-screen flex items-center justify-center p-4"><Card className="w-full max-w-md p-8 space-y-4">
+  <button className="text-xs text-slate-400" onClick={()=>go('landing')}>← Inicio</button>
+  <h2 className="text-2xl font-black text-white">Acceso a ACM Fitness</h2>
+  {err&&<p className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">{err}</p>}
+  <Field label="Correo"><input className={inp} type="email" value={e} onChange={x=>setE(x.target.value)}/></Field>
+  <Field label="Contraseña"><input className={inp} type="password" value={p} onChange={x=>setP(x.target.value)}/></Field>
+  <button className={G+" w-full py-3"} onClick={()=>setErr(onLogin(e,p)||'')}>Iniciar sesión</button>
+  <p className="text-xs text-slate-400 text-center">¿Nuevo cliente? <button className="text-emerald-400 font-bold" onClick={()=>go('register')}>Registrarme</button></p>
+ </Card></div>}
+
+function Register({go,onRegister}){
+ const [f,setF]=useState({name:'',lastName:'',email:'',password:'',phone:'',weight:'',height:'',level:'Principiante',mainGoal:'',injuries:'',consent:false});
+ const [err,setErr]=useState('');const set=k=>x=>setF({...f,[k]:x.target.value});
+ const submit=()=>{
+  if(!f.name||!f.lastName||!f.email||!f.mainGoal)return setErr('Completa los campos obligatorios (*).');
+  if(f.password.length<6)return setErr('La contraseña debe tener al menos 6 caracteres.');
+  if(!f.consent)return setErr('Debes aceptar el consentimiento RGPD.');
+  const r=onRegister(f);if(r)setErr(r)};
+ return <div className="min-h-screen flex items-center justify-center p-4"><Card className="w-full max-w-2xl p-8 space-y-4">
+  <button className="text-xs text-slate-400" onClick={()=>go('landing')}>← Cancelar</button>
+  <h2 className="text-2xl font-black text-white">Registro de nuevo atleta</h2>
+  {err&&<p className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">{err}</p>}
+  <div className="grid sm:grid-cols-2 gap-3">
+   <Field label="Nombre *"><input className={inp} value={f.name} onChange={set('name')}/></Field>
+   <Field label="Apellidos *"><input className={inp} value={f.lastName} onChange={set('lastName')}/></Field>
+   <Field label="Email *"><input className={inp} type="email" value={f.email} onChange={set('email')}/></Field>
+   <Field label="Contraseña * (mín. 6)"><input className={inp} type="password" value={f.password} onChange={set('password')}/></Field>
+   <Field label="Teléfono"><input className={inp} value={f.phone} onChange={set('phone')}/></Field>
+   <Field label="Nivel"><select className={inp} value={f.level} onChange={set('level')}><option>Principiante</option><option>Intermedio</option><option>Avanzado</option></select></Field>
+   <Field label="Peso (kg)"><input className={inp} type="number" value={f.weight} onChange={set('weight')}/></Field>
+   <Field label="Altura (cm)"><input className={inp} type="number" value={f.height} onChange={set('height')}/></Field></div>
+  <Field label="Objetivo principal *"><input className={inp} value={f.mainGoal} onChange={set('mainGoal')}/></Field>
+  <Field label="Lesiones o limitaciones"><textarea rows="2" className={inp} value={f.injuries} onChange={set('injuries')}/></Field>
+  <label className="flex gap-2 text-xs text-slate-400"><input type="checkbox" checked={f.consent} onChange={x=>setF({...f,consent:x.target.checked})}/>Consiento el tratamiento de mis datos personales y de salud (RGPD) y declaro no tener contraindicaciones para la actividad física.</label>
+  <button className={G+" w-full py-3"} onClick={submit}>Crear cuenta y acceder</button>
+ </Card></div>}
+
+function Coach({clients,setClients,workouts,setWorkouts,say,logout}){
+ const [tab,setTab]=useState('dash');const [sel,setSel]=useState(null);const [del,setDel]=useState(null);const [edit,setEdit]=useState(null);const [q,setQ]=useState('');
+ const done=workouts.filter(w=>w.status==='Completado').length,pend=workouts.filter(w=>w.status==='Pendiente').length;
+ const save=w=>{
+  if(w.id)setWorkouts(p=>p.map(x=>x.id===w.id?w:x));
+  else setWorkouts(p=>[{...w,id:'wk_'+Date.now(),feedback:null,rating:null},...p]);
+  say('Entrenamiento guardado.');setEdit(null)};
+ const delClient=()=>{setClients(p=>p.filter(c=>c.id!==del.id));setWorkouts(p=>p.filter(w=>w.clientId!==del.id));say('Cliente eliminado.','err');setDel(null);setSel(null)};
+ const cl=id=>clients.find(c=>c.id===id);
+ const tabs=[['dash','Dashboard'],['clients','Clientes ('+clients.length+')'],['wk','Entrenamientos ('+workouts.length+')']];
+ return <div>
+  <header className="border-b border-slate-800 bg-slate-900 px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+   <Logo/><nav className="flex gap-1 flex-wrap">{tabs.map(([id,l])=><button key={id} onClick={()=>setTab(id)} className={btn+(tab===id?'bg-emerald-500 text-slate-950':'text-slate-400 hover:text-white')}>{l}</button>)}</nav>
+   <div className="flex gap-2"><button className={G} onClick={()=>setEdit({})}>+ Crear entrenamiento</button><button className={S} onClick={logout}>Salir</button></div></header>
+  <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
+   {tab==='dash'&&<>
+    <h1 className="text-2xl font-black text-white">Panel de control</h1>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[['Clientes',clients.length,'text-white'],['Activos',clients.filter(c=>c.status==='Activo').length,'text-emerald-400'],['Completados',done,'text-white'],['Pendientes',pend,'text-amber-400']].map(([l,v,c])=><Card key={l}><p className="text-xs uppercase font-bold text-slate-400">{l}</p><p className={"text-3xl font-black mt-2 "+c}>{v}</p></Card>)}</div>
+    <Card><h2 className="font-bold text-white mb-3">Feedback de sesiones</h2>
+     {workouts.filter(w=>w.feedback).length===0?<p className="text-xs text-slate-500">Aún no hay feedback de clientes.</p>:workouts.filter(w=>w.feedback).slice(0,5).map(w=><div key={w.id} className="mb-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-xs"><div className="flex justify-between"><b className="text-white">{cl(w.clientId)?.name} · {w.title}</b><span className="text-amber-400">{'★'.repeat(w.rating||5)}</span></div><p className="italic text-slate-300 mt-1">"{w.feedback}"</p></div>)}</Card></>}
+   {tab==='clients'&&<>
+    <input className={inp} placeholder="Buscar por nombre, correo u objetivo…" value={q} onChange={e=>setQ(e.target.value)}/>
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">{clients.filter(c=>(c.name+' '+(c.lastName||'')+c.email+c.mainGoal).toLowerCase().includes(q.toLowerCase())).map(c=>{const w=workouts.filter(x=>x.clientId===c.id);return <Card key={c.id} className="space-y-3">
+     <div className="flex gap-3 items-center"><Avatar c={c}/><div className="min-w-0"><p className="font-bold text-white truncate">{c.name} {c.lastName}</p><p className="text-xs text-slate-400 truncate">{c.email}</p></div></div>
+     <p className="text-xs text-slate-300">{c.mainGoal} · <span className="text-emerald-400">{c.level}</span></p>
+     <p className="text-xs text-slate-400">{c.weight} kg · {c.height} cm · {w.filter(x=>x.status==='Completado').length}/{w.length} hechos</p>
+     {c.injuries&&<p className="text-[11px] p-2 rounded-lg bg-amber-500/10 text-amber-300">⚠ {c.injuries}</p>}
+     <div className="flex gap-2"><button className={S+" flex-1"} onClick={()=>setSel(c)}>Ver ficha</button><button className={S+" hover:!bg-red-500"} onClick={()=>setDel(c)}>🗑</button></div></Card>})}</div></>}
+   {tab==='wk'&&<div className="space-y-3">{workouts.length===0&&<p className="text-sm text-slate-500">No hay entrenamientos.</p>}{workouts.map(w=><Card key={w.id} className="flex flex-col md:flex-row justify-between gap-3">
+    <div><p className="font-bold text-white">{w.title} <span className={"text-[10px] px-2 py-0.5 rounded-full "+(w.status==='Completado'?'bg-emerald-500/10 text-emerald-400':'bg-amber-500/10 text-amber-400')}>{w.status}</span></p>
+     <p className="text-xs text-emerald-400">{cl(w.clientId)?.name} {cl(w.clientId)?.lastName}</p><p className="text-xs text-slate-400">{w.date} · {w.duration} min · {w.exercises.length} ejercicios</p></div>
+    <div className="flex gap-2"><button className={S} onClick={()=>{setWorkouts(p=>[{...w,id:'wk_'+Date.now(),title:w.title+' (Copia)',status:'Pendiente',feedback:null,rating:null,exercises:w.exercises.map(e=>({...e,completed:false}))},...p]);say('Duplicado.')}}>Duplicar</button><button className={S} onClick={()=>setEdit(w)}>Editar</button><button className={S+" hover:!bg-red-500"} onClick={()=>{setWorkouts(p=>p.filter(x=>x.id!==w.id));say('Entrenamiento eliminado.')}}>Eliminar</button></div></Card>)}</div>}
+  </main>
+  {sel&&<ClientModal c={clients.find(c=>c.id===sel.id)} workouts={workouts.filter(w=>w.clientId===sel.id)} onClose={()=>setSel(null)} onAssign={()=>{setEdit({clientId:sel.id});setSel(null)}} onMetric={m=>{setClients(p=>p.map(c=>c.id===sel.id?{...c,weight:m.weight,metricsHistory:[...(c.metricsHistory||[]),m]}:c));say('Métrica registrada.')}}/>}
+  {edit&&<Editor init={edit} clients={clients} onClose={()=>setEdit(null)} onSave={save}/>}
+  {del&&<div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><Card className="max-w-md w-full border-red-500/40"><h3 className="text-xl font-black text-white">¿Eliminar cliente?</h3><p className="text-xs text-slate-400 mt-2">Se borrarán de forma permanente {del.name} {del.lastName}, su historial y sus entrenamientos.</p><div className="mt-5 flex justify-end gap-2"><button className={S} onClick={()=>setDel(null)}>Cancelar</button><button className={btn+"bg-red-500 text-white"} onClick={delClient}>Sí, eliminar</button></div></Card></div>}
+ </div>}
+
+function ClientModal({c,workouts,onClose,onAssign,onMetric}){
+ const [m,setM]=useState({weight:'',benchPress:'',squat:''});
+ const add=()=>{if(!m.weight)return;onMetric({date:today(),weight:parseFloat(m.weight),benchPress:parseFloat(m.benchPress)||0,squat:parseFloat(m.squat)||0});setM({weight:'',benchPress:'',squat:''})};
+ return <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3 overflow-y-auto"><div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
+  <div className="flex justify-between"><div><h2 className="text-xl font-black text-white">{c.name} {c.lastName}</h2><p className="text-xs text-slate-400">{c.email} · {c.phone}</p></div><button className={S} onClick={onClose}>✕</button></div>
+  <div className="grid sm:grid-cols-2 gap-3 text-xs"><Card><p className="text-emerald-400 font-bold uppercase mb-1">Objetivo</p>{c.mainGoal}<p className="text-slate-400 mt-1">Nivel {c.level} · {c.weight} kg · {c.height} cm</p></Card><Card><p className="text-amber-400 font-bold uppercase mb-1">Salud & lesiones</p>{c.injuries||'Sin lesiones registradas.'}</Card></div>
+  <div className="flex justify-between items-center"><h4 className="text-xs font-bold uppercase text-white">Entrenamientos</h4><button className={G} onClick={onAssign}>+ Asignar rutina</button></div>
+  {workouts.map(w=><div key={w.id} className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex justify-between text-xs"><span className="text-white font-bold">{w.title} <span className="text-slate-400 font-normal">· {w.date}</span></span><span className={w.status==='Completado'?'text-emerald-400':'text-amber-400'}>{w.status}</span></div>)}
+  <h4 className="text-xs font-bold uppercase text-emerald-400">Registrar control / test</h4>
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{[['weight','Peso kg'],['benchPress','Banca kg'],['squat','Sentadilla kg']].map(([k,l])=><input key={k} type="number" step="0.5" placeholder={l} className={inp} value={m[k]} onChange={e=>setM({...m,[k]:e.target.value})}/>)}<button className={G} onClick={add}>Guardar</button></div>
+  <table className="w-full text-xs text-left"><thead className="text-slate-400"><tr><th className="p-2">Fecha</th><th>Peso</th><th>Banca</th><th>Sentadilla</th></tr></thead><tbody>{(c.metricsHistory||[]).map((r,i)=><tr key={i} className="border-t border-slate-800"><td className="p-2">{r.date}</td><td>{r.weight} kg</td><td>{r.benchPress||'-'}</td><td>{r.squat||'-'}</td></tr>)}</tbody></table>
+ </div></div>}
+
+function Editor({init,clients,onClose,onSave}){
+ const [f,setF]=useState({id:init.id||null,clientId:init.clientId||clients[0]?.id||'',title:init.title||'Fuerza & Acondicionamiento',date:init.date||today(),duration:init.duration||60,sessionGoal:init.sessionGoal||'',warmup:init.warmup||'5-10 min movilidad articular',status:init.status||'Pendiente',exercises:init.exercises?[...init.exercises]:[ex('e'+Date.now(),'Sentadilla Trasera',4,'8-10','40 kg','8','90s','')]});
+ const up=(id,k,v)=>setF(p=>({...p,exercises:p.exercises.map(e=>e.id===id?{...e,[k]:v}:e)}));
+ return <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3"><div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col">
+  <div className="p-5 border-b border-slate-800 flex justify-between"><h2 className="text-lg font-black text-white">{f.id?'Editar':'Crear'} entrenamiento</h2><button className={S} onClick={onClose}>✕</button></div>
+  <div className="p-5 overflow-y-auto space-y-3">
+   <div className="grid sm:grid-cols-3 gap-3">
+    <Field label="Cliente"><select className={inp} value={f.clientId} onChange={e=>setF({...f,clientId:e.target.value})}>{clients.map(c=><option key={c.id} value={c.id}>{c.name} {c.lastName}</option>)}</select></Field>
+    <Field label="Sesión"><input className={inp} value={f.title} onChange={e=>setF({...f,title:e.target.value})}/></Field>
+    <Field label="Fecha"><input className={inp} type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/></Field></div>
+   <div className="grid sm:grid-cols-2 gap-3"><Field label="Objetivo"><input className={inp} value={f.sessionGoal} onChange={e=>setF({...f,sessionGoal:e.target.value})}/></Field><Field label="Duración (min)"><input className={inp} type="number" value={f.duration} onChange={e=>setF({...f,duration:parseInt(e.target.value)||60})}/></Field></div>
+   <Field label="Calentamiento"><textarea rows="2" className={inp} value={f.warmup} onChange={e=>setF({...f,warmup:e.target.value})}/></Field>
+   <div className="flex justify-between items-center"><h3 className="text-sm font-black text-white uppercase">Ejercicios</h3><button className={S} onClick={()=>setF(p=>({...p,exercises:[...p.exercises,ex('e'+Date.now(),'Nuevo ejercicio',3,'10','Corporal','8','60s','')]}))}>+ Añadir</button></div>
+   {f.exercises.map((e,i)=><div key={e.id} className="p-3 bg-slate-950/70 border border-slate-800 rounded-2xl space-y-2">
+    <div className="flex gap-2"><span className="text-xs font-black text-emerald-400 pt-2">#{i+1}</span><input className={inp} value={e.name} onChange={x=>up(e.id,'name',x.target.value)}/>{f.exercises.length>1&&<button className={S} onClick={()=>setF(p=>({...p,exercises:p.exercises.filter(x=>x.id!==e.id)}))}>🗑</button>}</div>
+    <div className="grid grid-cols-5 gap-2">{[['sets','Series'],['reps','Reps'],['weight','Carga'],['rpe','RPE'],['rest','Descanso']].map(([k,l])=><label key={k} className="text-[10px] text-slate-400">{l}<input className={inp+" text-center"} value={e[k]} onChange={x=>up(e.id,k,k==='sets'?(parseInt(x.target.value)||0):x.target.value)}/></label>)}</div>
+    <input className={inp} placeholder="Instrucciones técnicas" value={e.instructions} onChange={x=>up(e.id,'instructions',x.target.value)}/></div>)}
+  </div>
+  <div className="p-5 border-t border-slate-800 flex justify-between"><button className={S} onClick={()=>onSave({...f,status:'Borrador'})}>Guardar borrador</button><button className={G} onClick={()=>onSave({...f,status:'Pendiente'})}>Publicar entrenamiento</button></div>
+ </div></div>}
+
+function ClientApp({me,workouts,setWorkouts,say,logout}){
+ const mine=workouts.filter(w=>w.clientId===me.id&&w.status!=='Borrador');
+ const [tab,setTab]=useState('wk');const [run,setRun]=useState(null);
+ const finish=(id,exs,fb,rt)=>{setWorkouts(p=>p.map(w=>w.id===id?{...w,status:'Completado',exercises:exs,feedback:fb,rating:rt,completedAt:new Date().toISOString()}:w));setRun(null);say('¡Entrenamiento completado! Feedback enviado.')};
+ const h=me.metricsHistory||[];
+ return <div className="max-w-3xl mx-auto p-4 pb-10 space-y-5">
+  <header className="flex justify-between items-center"><div className="flex items-center gap-3"><Avatar c={me}/><div><p className="text-xs text-slate-400">Hola de nuevo,</p><p className="font-black text-white">{me.name} {me.lastName}</p></div></div><button className={S} onClick={logout}>Salir</button></header>
+  <div className="flex gap-2">{[['wk','Entrenos'],['pr','Progreso']].map(([id,l])=><button key={id} onClick={()=>setTab(id)} className={btn+(tab===id?'bg-emerald-500 text-slate-950':'bg-slate-800 text-slate-300')}>{l}</button>)}</div>
+  {tab==='wk'&&<><Card className="border-emerald-500/30"><p className="text-[10px] uppercase font-black text-emerald-400">Tu plan activo</p><p className="text-lg font-black text-white mt-1">Objetivo: {me.mainGoal}</p><p className="text-xs text-slate-400">Nivel {me.level} · {me.weight} kg · {mine.filter(w=>w.status==='Completado').length} de {mine.length} completados</p></Card>
+   {mine.length===0&&<p className="text-xs text-slate-500 text-center py-8">Tu entrenador publicará una sesión pronto.</p>}
+   {mine.map(w=><Card key={w.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><p className="text-[11px] text-slate-400"><span className={w.status==='Completado'?'text-emerald-400':'text-amber-400'}>{w.status}</span> · {w.date} · {w.duration} min</p><p className="font-bold text-white">{w.title}</p><p className="text-xs text-slate-400">{w.sessionGoal} · {w.exercises.length} ejercicios</p>{w.feedback&&<p className="text-xs mt-1 text-slate-400"><b className="text-emerald-400">Tu feedback:</b> "{w.feedback}"</p>}</div><button className={G} onClick={()=>setRun(w)}>{w.status==='Completado'?'Ver resumen':'▶ Comenzar'}</button></Card>)}</>}
+  {tab==='pr'&&<Card><h3 className="text-xs font-bold uppercase text-white mb-3">Historial de registros</h3>{h.map((r,i)=><div key={i} className="flex justify-between text-xs p-2.5 mb-2 bg-slate-950/60 border border-slate-800 rounded-xl"><span className="text-slate-400">{r.date}</span><b className="text-white">{r.weight} kg</b><span className="text-emerald-400">Banca {r.benchPress||'-'}</span><span className="text-teal-400">Sent. {r.squat||'-'}</span></div>)}</Card>}
+  {run&&<Session w={run} onClose={()=>setRun(null)} onFinish={finish}/>}
+ </div>}
+
+function Session({w,onClose,onFinish}){
+ const [exs,setExs]=useState(w.exercises);const [fb,setFb]=useState(w.feedback||'');const [rt,setRt]=useState(w.rating||5);
+ const [t,setT]=useState(null);const [on,setOn]=useState(false);
+ useEffect(()=>{if(!on)return;if(t<=0){setOn(false);return}const i=setInterval(()=>setT(s=>s-1),1000);return()=>clearInterval(i)},[on,t]);
+ const n=exs.filter(e=>e.completed).length,pct=Math.round(n/(exs.length||1)*100);
+ return <div className="fixed inset-0 z-50 bg-slate-950 overflow-y-auto"><div className="sticky top-0 bg-slate-900 border-b border-slate-800 p-4"><div className="max-w-3xl mx-auto flex justify-between items-center"><button className="text-xs text-slate-400" onClick={onClose}>✕ Salir</button><div className="text-center"><p className="text-sm font-black text-white">{w.title}</p><p className="text-[10px] text-emerald-400">{pct}% completado</p></div><span className="text-xs text-slate-300">{n}/{exs.length}</span></div><div className="max-w-3xl mx-auto bg-slate-800 h-1.5 rounded-full mt-3"><div className="bg-emerald-500 h-full rounded-full" style={{width:pct+'%'}}/></div></div>
+ <div className="max-w-3xl mx-auto p-4 space-y-4">
+  <Card className="flex items-center justify-between"><div><p className="text-xs font-bold text-white">Temporizador de descanso</p><p className="text-lg font-black text-emerald-400">{t==null?'0:00':Math.floor(t/60)+':'+String(t%60).padStart(2,'0')}</p></div><div className="flex gap-2">{[60,90,120].map(s=><button key={s} className={S} onClick={()=>{setT(s);setOn(true)}}>{s}s</button>)}{on&&<button className={S} onClick={()=>setOn(false)}>Pausar</button>}</div></Card>
+  {w.warmup&&<Card className="text-xs"><p className="text-[10px] font-bold uppercase text-emerald-400">Calentamiento</p>{w.warmup}</Card>}
+  {exs.map((e,i)=><Card key={e.id} className={e.completed?'border-emerald-500/40':''}><div className="flex gap-3 items-start"><button onClick={()=>setExs(p=>p.map(x=>x.id===e.id?{...x,completed:!x.completed}:x))} className={"w-6 h-6 rounded-lg shrink-0 mt-1 flex items-center justify-center "+(e.completed?'bg-emerald-500 text-slate-950 font-black':'border-2 border-slate-600')}>{e.completed?'✓':''}</button><div><p className="text-[10px] font-bold text-emerald-400 uppercase">Ejercicio #{i+1}</p><p className={"font-bold "+(e.completed?'line-through text-slate-400':'text-white')}>{e.name}</p></div></div>
+   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-center">{[['Series × reps',e.sets+' × '+e.reps],['Carga',e.weight],['RPE',(e.rpe||'8')+'/10'],['Descanso',e.rest||'90s']].map(([l,v])=><div key={l} className="bg-slate-950 p-2 rounded-xl border border-slate-800"><span className="text-[9px] uppercase text-slate-400 block">{l}</span><b className="text-xs text-white">{v}</b></div>)}</div>
+   {e.instructions&&<p className="mt-2 text-xs text-slate-300 p-2.5 rounded-xl bg-slate-950/80"><b className="text-slate-400">Técnica: </b>{e.instructions}</p>}</Card>)}
+  <Card className="space-y-3"><h3 className="text-xs font-bold uppercase text-white">Feedback de la sesión</h3><div>{[1,2,3,4,5].map(s=><button key={s} className={"text-2xl "+(s<=rt?'text-amber-400':'text-slate-700')} onClick={()=>setRt(s)}>★</button>)}</div><textarea rows="3" className={inp} placeholder="¿Cómo te has sentido? ¿Alguna molestia?" value={fb} onChange={e=>setFb(e.target.value)}/><button className={G+" w-full py-4 text-sm"} onClick={()=>onFinish(w.id,exs,fb,rt)}>Finalizar y enviar feedback</button></Card>
+ </div></div>}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>
